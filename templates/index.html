@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Locals OS — Hackney</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: #0a0f1a;
+      color: #1a1a1a;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container { display: flex; height: 100vh; }
+
+    /* =========== INBOX SIDEBAR (LIGHT) =========== */
+    .inbox-panel {
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border-right: 1px solid #e5e7eb;
+    }
+
+    .inbox-header {
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid #e0e5ec;
+      font-weight: 700;
+      font-size: 16px;
+      color: #111827;
+      background: linear-gradient(180deg, #f8faf9 0%, #ffffff 100%);
+      display: flex;
+      align-items: center;
+      gap: 0;
+      letter-spacing: -0.01em;
+    }
+
+    /* Wordmark: "Locals" is the brand, "OS" is secondary */
+    .wordmark {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .wordmark-locals {
+      font-weight: 800;
+      font-size: 17px;
+      color: #0f7a5f;
+      letter-spacing: -0.03em;
+      position: relative;
+    }
+
+    /* Leaf accent rendered via CSS pseudo-element */
+    .wordmark-locals::before {
+      content: '';
+      position: absolute;
+      top: -3px;
+      right: -6px;
+      width: 7px;
+      height: 7px;
+      background: #34d399;
+      border-radius: 0 50% 0 50%;
+      transform: rotate(-20deg);
+    }
+
+    .wordmark-os {
+      font-weight: 400;
+      font-size: 17px;
+      color: #94a3b8;
+      letter-spacing: -0.02em;
+      margin-left: 1px;
+    }
+
+    .inbox-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .inbox-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+      border-bottom: 1px solid #f3f4f6;
+      position: relative;
+    }
+
+    .inbox-item:hover {
+      background: #f4f7f6;
+      transform: translateX(2px);
+    }
+    .inbox-item:active {
+      transform: translateX(1px) scale(0.995);
+    }
+    .inbox-item.active {
+      background: #ecfdf5;
+      border-left: 3px solid #10b981;
+      padding-left: 13px;
+    }
+
+    .inbox-item .inbox-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(5, 150, 105, 0.18);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .inbox-item:hover .inbox-avatar {
+      box-shadow: 0 3px 12px rgba(5, 150, 105, 0.25);
+      transform: scale(1.04);
+    }
+
+    .inbox-item .inbox-info { flex: 1; min-width: 0; }
+
+    .inbox-item .inbox-name {
+      font-weight: 600; font-size: 13px; color: #111827;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      letter-spacing: -0.01em;
+    }
+
+    .inbox-item .inbox-preview {
+      font-size: 11px; color: #9ca3af; margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .inbox-item .inbox-time {
+      font-size: 10px; color: #b0b7c3;
+      position: absolute; top: 12px; right: 16px;
+      letter-spacing: 0.02em;
+    }
+
+    .inbox-badge {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      position: absolute; bottom: 12px; right: 16px;
+      animation: badgePop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 4px rgba(5, 150, 105, 0.3);
+    }
+
+    @keyframes badgePop {
+      from { opacity: 0; transform: scale(0.5); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .inbox-item.new-entry { animation: slideDown 0.4s ease; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); max-height: 0; }
+      to   { opacity: 1; transform: translateY(0); max-height: 80px; }
+    }
+
+    /* =========== CHAT PANEL (LIGHT) =========== */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border-right: 1px solid #e5e7eb;
+      min-width: 0;
+    }
+
+    .chat-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      background: linear-gradient(180deg, #ffffff 0%, #fcfdfc 100%);
+    }
+
+    .avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #059669 0%, #34d399 60%, #6ee7b7 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px; color: #fff;
+      position: relative;
+      box-shadow: 0 2px 10px rgba(5, 150, 105, 0.2);
+    }
+
+    /* Online indicator dot */
+    .avatar::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 10px;
+      height: 10px;
+      background: #22c55e;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+      animation: onlinePulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes onlinePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35); }
+      50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+    }
+
+    .header-info .name {
+      font-weight: 600; font-size: 15px; color: #111827;
+      letter-spacing: -0.01em;
+    }
+    .header-info .subtitle {
+      font-size: 12px; color: #94a3b8;
+      letter-spacing: 0.01em;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #f9fafb;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.55;
+      animation: msgAppear 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      word-wrap: break-word;
+      letter-spacing: -0.005em;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #059669 0%, #0d9e72 100%);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 1px 4px rgba(5, 150, 105, 0.15);
+    }
+
+    .message.agent {
+      align-self: flex-start;
+      background: #ffffff;
+      color: #1f2937;
+      border: 1px solid #e8ebef;
+      border-bottom-left-radius: 4px;
+      white-space: pre-wrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    @keyframes msgAppear {
+      from { opacity: 0; transform: translateY(10px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Group chat messages */
+    .message.group-member {
+      align-self: flex-start;
+      background: #ffffff;
+      border: 1px solid #e8ebef;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .message .sender-name {
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 3px;
+      letter-spacing: 0.01em;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Voice message bubble */
+    .voice-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 11px;
+      opacity: 0.75;
+      letter-spacing: 0.3px;
+    }
+
+    .voice-wave-small {
+      display: flex; align-items: center; gap: 2px; height: 14px;
+    }
+
+    .voice-wave-small span {
+      width: 2px;
+      background: currentColor;
+      border-radius: 1px;
+      opacity: 0.6;
+    }
+
+    /* Photo bubble */
+    .photo-bubble {
+      width: 240px; height: 160px;
+      border-radius: 12px;
+      background: url('https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?w=480&h=320&fit=crop&crop=center') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .photo-bubble::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(0deg, rgba(0,0,0,0.5) 0%, transparent 50%);
+    }
+
+    .photo-icon { display: none; }
+    .photo-label {
+      font-size: 12px; color: #fff; z-index: 1; font-weight: 600;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    /* Options */
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .option-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px;
+      background: #f9fafb;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      color: #1f2937;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      font-size: 14px;
+      text-align: left;
+      font-family: inherit;
+    }
+
+    .option-btn:hover {
+      background: #ecfdf5;
+      border-color: #10b981;
+      transform: translateX(3px);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+    }
+    .option-btn:active {
+      transform: translateX(1px);
+    }
+
+    .option-icon { font-size: 20px; }
+    .option-label { font-weight: 600; color: #111827; }
+    .option-desc { font-size: 12px; color: #6b7280; margin-top: 1px; }
+
+    /* Recording bar */
+    .recording-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: #fef2f2;
+      border-top: 1px solid #fecaca;
+      font-size: 13px;
+      color: #dc2626;
+    }
+
+    .recording-bar.active { display: flex; }
+
+    .recording-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .voice-wave {
+      display: flex; align-items: center; gap: 2px; height: 20px;
+    }
+
+    .voice-wave span {
+      width: 3px;
+      background: #f87171;
+      border-radius: 2px;
+      animation: wave 0.5s ease-in-out infinite alternate;
+    }
+
+    .voice-wave span:nth-child(1) { height: 30%; animation-delay: 0s; }
+    .voice-wave span:nth-child(2) { height: 60%; animation-delay: 0.1s; }
+    .voice-wave span:nth-child(3) { height: 100%; animation-delay: 0.15s; }
+    .voice-wave span:nth-child(4) { height: 70%; animation-delay: 0.25s; }
+    .voice-wave span:nth-child(5) { height: 40%; animation-delay: 0.35s; }
+
+    @keyframes wave {
+      from { transform: scaleY(0.3); }
+      to   { transform: scaleY(1); }
+    }
+
+    #recordingTranscript {
+      flex: 1;
+      text-align: right;
+      font-style: italic;
+      opacity: 0.8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Input area */
+    .chat-input {
+      padding: 12px 16px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+    }
+
+    #textInput {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 20px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      color: #1f2937;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    #textInput:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    #textInput::placeholder { color: #b0b7c3; }
+
+    .mic-btn, .send-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 18px;
+    }
+
+    .mic-btn { background: #f3f4f6; color: #6b7280; }
+    .mic-btn:hover { background: #e5e7eb; transform: scale(1.06); }
+
+    .mic-btn.recording {
+      background: #dc2626;
+      color: #fff;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%  { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+      70% { box-shadow: 0 0 0 12px rgba(220,38,38,0); }
+      100%{ box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+    }
+
+    .send-btn {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
+    }
+    .send-btn:hover {
+      background: linear-gradient(135deg, #047857, #059669);
+      transform: scale(1.06);
+      box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3);
+    }
+
+    /* =========== DASHBOARD PANEL (DARK + MONO) =========== */
+    .dashboard-panel {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      background: #080d17;
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+      color: #e2e8f0;
+    }
+
+    .dash-header {
+      padding: 14px 24px;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, #0d1320 0%, #0a0f1a 100%);
+    }
+
+    .dash-header h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .dash-header h2 .dash-icon {
+      margin-right: 6px;
+      opacity: 0.7;
+    }
+    .dash-status {
+      font-size: 11px;
+      color: #64748b;
+      transition: color 0.4s ease;
+      letter-spacing: 0.03em;
+    }
+
+    .dash-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .agents-column {
+      flex: 1;
+      padding: 20px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Community block */
+    .community-block {
+      border: 1.5px solid #7c3aed;
+      border-radius: 10px;
+      background: rgba(124,58,237,0.04);
+      overflow: hidden;
+      animation: fadeIn 0.4s ease;
+      display: none;
+    }
+
+    .community-block.visible { display: block; }
+
+    .community-block-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(124,58,237,0.05) 100%);
+      border-bottom: 1px solid rgba(124,58,237,0.2);
+    }
+
+    .community-logo {
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      background: #7c3aed;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .community-header-text .community-name {
+      font-size: 12px; font-weight: 700; color: #a78bfa;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+
+    .community-header-text .community-subtitle {
+      font-size: 9px; color: #475569;
+    }
+
+    .community-members {
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .member-card {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 7px 9px;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: border-color 0.4s ease, opacity 0.4s ease;
+      overflow: hidden;
+    }
+
+    .member-card .m-name {
+      font-size: 11px; font-weight: 600; color: #e2e8f0;
+      display: flex; align-items: center; gap: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .member-card .m-role {
+      font-size: 9px; color: #64748b; margin-top: 1px;
+      white-space: nowrap;
+    }
+
+    .member-card .m-status {
+      margin-top: 3px; font-size: 10px; font-weight: 700;
+    }
+
+    .member-card .m-status.accepted { color: #4ade80; }
+    .member-card .m-status.declined { color: #f87171; }
+    .member-card .m-status.pending  { color: #fbbf24; }
+
+    /* Arrows */
+    .flow-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 10px;
+      line-height: 1;
+      padding: 2px 0;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .flow-arrow .arrow-line {
+      width: 2px; height: 18px; background: #334155;
+    }
+
+    .flow-arrow .arrow-head {
+      color: #334155;
+      font-size: 12px;
+    }
+
+    .flow-arrow .arrow-label {
+      font-size: 9px;
+      color: #475569;
+      letter-spacing: 0.5px;
+      padding: 2px 0;
+    }
+
+    /* Active arrow blinks */
+    .flow-arrow.active .arrow-line { background: #4ade80; }
+    .flow-arrow.active .arrow-head { color: #4ade80; animation: arrowPulse 1s infinite; }
+
+    .flow-arrow.active-up .arrow-line { background: #4ade80; }
+    .flow-arrow.active-up .arrow-head { color: #4ade80; animation: arrowPulse 1s infinite; }
+
+    .flow-arrow.done .arrow-line { background: #166534; }
+    .flow-arrow.done .arrow-head { color: #166534; }
+
+    @keyframes arrowPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Rotating triangle arrows */
+    .tri-head {
+      display: inline-block;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s ease;
+      font-size: 14px;
+    }
+
+    /* When flipped, the arrow needs to move from bottom to top of the line */
+    .flow-arrow.done .tri-head.flipped {
+      transform: rotate(180deg);
+    }
+
+    .flow-arrow.done.flipped-order {
+      flex-direction: column-reverse;
+    }
+
+    /* Triangle layout inside council */
+    .tri-arrows {
+      display: flex;
+      justify-content: center;
+      gap: 40%;
+      padding: 2px 0;
+    }
+
+    .tri-arrows .flow-arrow { flex: none; }
+
+    .agent-pair {
+      display: flex;
+      gap: 10px;
+    }
+
+    .agent-pair .agent-block {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tri-arrows-up {
+      display: flex;
+      justify-content: center;
+      gap: 40%;
+      padding: 2px 0;
+    }
+
+    .dash-waiting {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1e293b;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* Sarah's agent node */
+    .sarah-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .sarah-node-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      letter-spacing: 0.01em;
+    }
+
+    .sarah-node-box .node-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+      animation: onlinePulse 2.5s ease-in-out infinite;
+    }
+
+    .arrow-down {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #334155;
+      font-size: 11px;
+      line-height: 1;
+      padding: 4px 0;
+    }
+
+    .arrow-down .arrow-line {
+      width: 1px;
+      height: 16px;
+      background: #334155;
+    }
+
+    /* Council block */
+    .council-block {
+      border: 1.5px solid #00857C;
+      border-radius: 10px;
+      background: rgba(0,133,124,0.04);
+      overflow: hidden;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .council-block-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, rgba(0,133,124,0.15) 0%, rgba(0,133,124,0.05) 100%);
+      border-bottom: 1px solid rgba(0,133,124,0.2);
+    }
+
+    .council-logo {
+      width: 28px; height: 28px;
+      border-radius: 5px;
+      background: #00857C;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 13px; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .council-header-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .council-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #00857C;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .council-subtitle {
+      font-size: 9px;
+      color: #475569;
+      letter-spacing: 0.3px;
+    }
+
+    .council-agents-inner {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 350px;
+      overflow-y: auto;
+    }
+
+    /* Agent blocks */
+    .agent-block {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 14px 16px;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .agent-block.done {
+      border-color: #166534;
+      box-shadow: 0 0 12px rgba(22, 101, 52, 0.08);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .agent-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .agent-name-group {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 600; font-size: 13px;
+    }
+
+    .agent-icon { font-size: 16px; }
+
+    .agent-badge {
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .agent-badge.running { background: #422006; color: #fbbf24; }
+    .agent-badge.done    { background: #052e16; color: #4ade80; }
+
+    .spinner {
+      width: 12px; height: 12px;
+      border: 2px solid #334155;
+      border-top-color: #fbbf24;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .agent-output {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid #1e293b;
+      font-size: 10px;
+      line-height: 1.5;
+      color: #64748b;
+      white-space: pre-wrap;
+      letter-spacing: 0.01em;
+    }
+
+    /* (notification cards removed — replaced by community block) */
+
+    /* Scrollbar — light for chat side */
+    .inbox-panel ::-webkit-scrollbar,
+    .chat-panel ::-webkit-scrollbar { width: 5px; }
+    .inbox-panel ::-webkit-scrollbar-track,
+    .chat-panel ::-webkit-scrollbar-track { background: transparent; }
+    .inbox-panel ::-webkit-scrollbar-thumb,
+    .chat-panel ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+    /* Scrollbar — dark for dashboard */
+    .dashboard-panel ::-webkit-scrollbar { width: 5px; }
+    .dashboard-panel ::-webkit-scrollbar-track { background: transparent; }
+    .dashboard-panel ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- ===== INBOX SIDEBAR ===== -->
+    <div class="inbox-panel">
+      <div class="inbox-header"><span class="wordmark"><span class="wordmark-locals">Locals</span><span class="wordmark-os">&thinsp;OS</span></span></div>
+      <div class="inbox-list" id="inboxList">
+        <div class="inbox-item active" id="inboxAgent" onclick="switchChat('agent')">
+          <div class="inbox-avatar" style="background: linear-gradient(135deg, #059669, #10b981);">S</div>
+          <div class="inbox-info">
+            <div class="inbox-name">Sarah's Agent</div>
+            <div class="inbox-preview">Tap mic or type to start</div>
+          </div>
+          <span class="inbox-time">now</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CHAT PANEL (LIGHT) ===== -->
+    <div class="chat-panel">
+      <div class="chat-header" id="chatHeader">
+        <div class="avatar" id="chatAvatar">S</div>
+        <div class="header-info">
+          <div class="name" id="chatName">Sarah's Agent</div>
+          <div class="subtitle" id="chatSubtitle">Locals OS &middot; Hackney</div>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="messages"></div>
+
+      <!-- Group chat messages (hidden initially) -->
+      <div class="chat-messages" id="groupMessages" style="display:none;"></div>
+
+      <div class="recording-bar" id="recordingBar">
+        <div class="recording-dot"></div>
+        <span>Listening&hellip;</span>
+        <div class="voice-wave">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <span id="recordingTranscript"></span>
+      </div>
+
+      <div class="chat-input" style="justify-content: center;">
+        <button class="mic-btn" id="micBtn" style="width:56px;height:56px;font-size:24px;">&#x1f3a4;</button>
+      </div>
+      <input type="hidden" id="textInput">
+    </div>
+
+    <!-- ===== DASHBOARD PANEL (DARK + MONO) ===== -->
+    <div class="dashboard-panel">
+      <div class="dash-header">
+        <h2><span class="dash-icon">&#x1f916;</span>Agent Network</h2>
+        <span class="dash-status" id="dashStatus">Waiting for Sarah&hellip;</span>
+      </div>
+
+      <div class="dash-body">
+        <div class="agents-column" id="agentsColumn">
+          <div class="dash-waiting" id="dashWaiting">
+            Agents will activate once<br>Sarah makes her choice
+          </div>
+          <!-- Community block (hidden until council approves) -->
+          <div class="community-block" id="communityBlock">
+            <div class="community-block-header">
+              <div class="community-logo">C</div>
+              <div class="community-header-text">
+                <div class="community-name">Community</div>
+                <div class="community-subtitle">Nearby residents &middot; Skill-matched</div>
+              </div>
+            </div>
+            <div class="community-members" id="communityMembers"></div>
+          </div>
+          <!-- Arrow: community <-> sarah -->
+          <div class="flow-arrow" id="arrowCommunity" style="display:none;">
+            <span class="arrow-head">&#x25B2;</span>
+            <div class="arrow-line"></div>
+            <span class="arrow-label">invites</span>
+            <div class="arrow-line"></div>
+          </div>
+          <!-- Sarah + arrow + council inserted by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---- state ---- */
+    let firstMessage = true;
+    let eventSource  = null;
+    let skillsOutput = '';
+    let currentChat  = 'agent';
+    let groupCreated = false;
+
+    /* ---- elements ---- */
+    const $msgs      = document.getElementById('messages');
+    const $groupMsgs = document.getElementById('groupMessages');
+    const $input     = document.getElementById('textInput');
+    const $mic       = document.getElementById('micBtn');
+    /* send button removed */
+    const $recBar    = document.getElementById('recordingBar');
+    const $recText   = document.getElementById('recordingTranscript');
+    const $agents    = document.getElementById('agentsColumn');
+    const $waiting   = document.getElementById('dashWaiting');
+    const $dashStat  = document.getElementById('dashStatus');
+    const $inbox     = document.getElementById('inboxList');
+
+    const AGENT_META = {
+      space:     { icon: '\u{1F33F}', name: 'Space Agent' },
+      council:   { icon: '\u{1F3DB}', name: 'Council Agent' },
+      skills:    { icon: '\u{1F50D}', name: 'Skills Agent' },
+    };
+
+    /* ---- no welcome message ---- */
+
+    /* ---- inbox switching ---- */
+    function switchChat(chat) {
+      currentChat = chat;
+      document.querySelectorAll('.inbox-item').forEach(i => i.classList.remove('active'));
+
+      if (chat === 'agent') {
+        document.getElementById('inboxAgent').classList.add('active');
+        $msgs.style.display = 'flex';
+        $groupMsgs.style.display = 'none';
+        document.getElementById('chatAvatar').style.background = 'linear-gradient(135deg, #059669, #10b981)';
+        document.getElementById('chatAvatar').textContent = 'S';
+        document.getElementById('chatName').textContent = "Sarah\u2019s Agent";
+        document.getElementById('chatSubtitle').textContent = 'Locals OS \u00b7 Hackney';
+      } else if (chat === 'group') {
+        document.getElementById('inboxGroup').classList.add('active');
+        /* Clear the badge */
+        const badge = document.getElementById('inboxGroup').querySelector('.inbox-badge');
+        if (badge) badge.remove();
+        $msgs.style.display = 'none';
+        $groupMsgs.style.display = 'flex';
+        document.getElementById('chatAvatar').style.background = 'linear-gradient(135deg, #059669, #34d399)';
+        document.getElementById('chatAvatar').textContent = '\u{1F331}';
+        document.getElementById('chatName').textContent = 'Mentmore Terrace Garden';
+        document.getElementById('chatSubtitle').textContent = 'Sarah, Dev, Amara, Kieran + 3 others';
+      }
+    }
+
+    /* ---- create group chat in inbox ---- */
+    function createGroupChat() {
+      if (groupCreated) return;
+      groupCreated = true;
+
+      const item = document.createElement('div');
+      item.className = 'inbox-item new-entry';
+      item.id = 'inboxGroup';
+      item.onclick = () => switchChat('group');
+      item.innerHTML =
+        '<div class="inbox-avatar" style="background:linear-gradient(135deg,#059669,#34d399);">\u{1F331}</div>' +
+        '<div class="inbox-info">' +
+          '<div class="inbox-name">Mentmore Terrace Garden</div>' +
+          '<div class="inbox-preview">Agent created this group</div>' +
+        '</div>' +
+        '<span class="inbox-time">now</span>' +
+        '<span class="inbox-badge">5</span>';
+      $inbox.insertBefore(item, $inbox.firstChild);
+
+      /* Seed group messages with timed delays */
+      const groupMsgs = [
+        { sender: 'Locals Agent', color: '#059669', text: 'Welcome to the Mentmore Terrace Garden group! I\u2019ve connected everyone involved in this project.', delay: 0 },
+        { sender: 'Locals Agent', color: '#059669', text: 'Roles:\n\u2022 Sarah \u2014 Project Instigator\n\u2022 Dev \u2014 Planting Plan Lead\n\u2022 Amara \u2014 Community Lead\n\u2022 Kieran + 2 others \u2014 Contributors', delay: 800 },
+        { sender: 'Dev', color: '#2563eb', text: 'This is brilliant. I\u2019ve been eyeing that verge for months. I can bring my soil testing kit on Saturday.', delay: 2500 },
+        { sender: 'Amara', color: '#7c3aed', text: 'Amazing! I\u2019ll share this in the parents group. A few of them were asking about exactly this kind of thing.', delay: 4500 },
+        { sender: 'Kieran', color: '#ea580c', text: 'Hey! Just moved here two weeks ago. Don\u2019t know much about gardening but happy to dig!', delay: 6500 },
+      ];
+
+      groupMsgs.forEach(m => {
+        setTimeout(() => {
+          const d = document.createElement('div');
+          d.className = 'message group-member';
+          d.innerHTML =
+            '<div class="sender-name" style="color:' + m.color + ';">' + m.sender + '</div>' +
+            '<span style="white-space:pre-wrap;">' + m.text + '</span>';
+          $groupMsgs.appendChild(d);
+          $groupMsgs.scrollTop = $groupMsgs.scrollHeight;
+          /* Update inbox preview */
+          const preview = document.querySelector('#inboxGroup .inbox-preview');
+          if (preview) preview.textContent = m.sender + ': ' + m.text.split('\n')[0].substring(0, 30) + '\u2026';
+        }, m.delay);
+      });
+    }
+
+    /* ---- speech recognition ---- */
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recog = null;
+    let recording = false;
+
+    if (SR) {
+      recog = new SR();
+      recog.continuous    = false;
+      recog.interimResults = true;
+      recog.lang          = 'en-GB';
+
+      recog.onresult = e => {
+        let t = '';
+        for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+        $input.value = t;
+        $recText.textContent = t;
+      };
+
+      recog.onend = () => {
+        stopRec();
+        if ($input.value.trim()) sendChat($input.value.trim(), true);
+      };
+
+      recog.onerror = () => stopRec();
+    }
+
+    let whisperTimer = null;
+
+    $mic.onclick = () => {
+      if (recording) {
+        stopRec();
+        sendChat('What could I do with this piece of land?', true);
+        return;
+      }
+      startRec();
+    };
+
+    /* Watch for SuperWhisper typing into the input */
+    $input.addEventListener('input', () => {
+      if (!recording) return;
+      $recText.textContent = $input.value;
+    });
+
+    function startRec() {
+      recording = true;
+      $mic.classList.add('recording');
+      $recBar.classList.add('active');
+      $input.value = '';
+      $recText.textContent = 'Listening\u2026';
+    }
+
+    function stopRec() {
+      recording = false;
+      $mic.classList.remove('recording');
+      $recBar.classList.remove('active');
+      clearTimeout(whisperTimer);
+    }
+
+    /* ---- send removed, mic only ---- */
+
+    /* ---- chat helpers ---- */
+    function addMsg(type, text, voice) {
+      const d = document.createElement('div');
+      d.className = 'message ' + type;
+      if (voice && type === 'user') {
+        const vi = document.createElement('div');
+        vi.className = 'voice-indicator';
+        const bars = [4,8,12,9,5].map(h => {
+          const s = document.createElement('span');
+          s.style.height = h + 'px';
+          return s;
+        });
+        const wv = document.createElement('span');
+        wv.className = 'voice-wave-small';
+        bars.forEach(b => wv.appendChild(b));
+        vi.innerHTML = '\u{1F3A4} ';
+        vi.appendChild(wv);
+        vi.innerHTML += ' Voice message';
+        d.appendChild(vi);
+      }
+      const s = document.createElement('span');
+      s.textContent = text;
+      d.appendChild(s);
+      $msgs.appendChild(d);
+      $msgs.scrollTop = $msgs.scrollHeight;
+      return d;
+    }
+
+    function addPhoto() {
+      const d = document.createElement('div');
+      d.className = 'message user';
+      d.innerHTML = '<div class="photo-bubble">' +
+        '<div class="photo-icon">\u{1F4F7}</div>' +
+        '<div class="photo-label">Mentmore Terrace E8</div></div>';
+      $msgs.appendChild(d);
+      $msgs.scrollTop = $msgs.scrollHeight;
+    }
+
+    function addOptions(opts) {
+      const d = document.createElement('div');
+      d.className = 'message agent';
+      const c = document.createElement('div');
+      c.className = 'options-container';
+      opts.forEach(o => {
+        const b = document.createElement('button');
+        b.className = 'option-btn';
+        b.innerHTML = '<span class="option-icon">' + o.icon + '</span><div>' +
+          '<div class="option-label">' + o.label + '</div>' +
+          '<div class="option-desc">' + o.desc + '</div></div>';
+        b.onclick = () => pickOption(o);
+        c.appendChild(b);
+      });
+      d.appendChild(c);
+      $msgs.appendChild(d);
+      $msgs.scrollTop = $msgs.scrollHeight;
+    }
+
+    /* ---- TTS ---- */
+    let currentAudio = null;
+
+    async function speak(text) {
+      try {
+        /* Stop any playing audio */
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          currentAudio = null;
+        }
+        const r = await fetch('/tts', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ text: text })
+        });
+        if (r.status === 204) return;
+        const blob = await r.blob();
+        if (blob.size === 0) return;
+        const url = URL.createObjectURL(blob);
+        currentAudio = new Audio(url);
+        currentAudio.play();
+      } catch (_) { }
+    }
+
+    /* ---- send message to backend ---- */
+    async function sendChat(text, voice) {
+      if (firstMessage) { addPhoto(); firstMessage = false; }
+      addMsg('user', text, voice);
+      $input.value = '';
+      const typing = addMsg('agent', '\u2026');
+
+      try {
+        const r = await fetch('/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ message: text })
+        });
+        const d = await r.json();
+        typing.querySelector('span').textContent = d.reply;
+        speak(d.reply);
+        if (d.options) addOptions(d.options);
+        /* Update inbox preview */
+        const preview = document.querySelector('#inboxAgent .inbox-preview');
+        if (preview) preview.textContent = d.reply.substring(0, 35) + '\u2026';
+      } catch (_) {
+        typing.querySelector('span').textContent = 'Server not reachable.';
+      }
+    }
+
+    async function pickOption(opt) {
+      document.querySelectorAll('.option-btn').forEach(b => {
+        b.disabled = true;
+        b.style.opacity = '0.4';
+        b.style.pointerEvents = 'none';
+      });
+
+      addMsg('user', opt.label);
+      const typing = addMsg('agent', '\u2026');
+
+      try {
+        const r = await fetch('/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ selection: opt.label })
+        });
+        const d = await r.json();
+        typing.querySelector('span').textContent = d.reply;
+        speak(d.reply);
+        if (d.trigger_dashboard) launchDashboard();
+      } catch (_) {
+        typing.querySelector('span').textContent = 'Server not reachable.';
+      }
+    }
+
+    /* ---- dashboard ---- */
+    function launchDashboard() {
+      $waiting.style.display = 'none';
+      $dashStat.textContent = 'Agents activated';
+      $dashStat.style.color = '#4ade80';
+
+      /* Sarah's agent node */
+      const sarah = document.createElement('div');
+      sarah.className = 'sarah-node';
+      sarah.innerHTML = '<div class="sarah-node-box"><span class="node-dot"></span>Sarah\u2019s Agent</div>';
+      $agents.appendChild(sarah);
+
+      /* Arrow down: sarah -> council (active) */
+      const arrowDown = document.createElement('div');
+      arrowDown.className = 'flow-arrow active';
+      arrowDown.id = 'arrowCouncil';
+      arrowDown.innerHTML =
+        '<div class="arrow-line"></div>' +
+        '<span class="arrow-label">request</span>' +
+        '<div class="arrow-line"></div>' +
+        '<span class="arrow-head">\u25BC</span>';
+      $agents.appendChild(arrowDown);
+
+      /* Hackney Council block */
+      const council = document.createElement('div');
+      council.className = 'council-block';
+      council.innerHTML =
+        '<div class="council-block-header">' +
+          '<div class="council-logo">H</div>' +
+          '<div class="council-header-text">' +
+            '<div class="council-name">Hackney Council</div>' +
+            '<div class="council-subtitle">Multi-Agent Infrastructure</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="council-agents-inner" id="councilAgents"></div>';
+      $agents.appendChild(council);
+
+      eventSource = new EventSource('/stream');
+      eventSource.onmessage = e => {
+        const d = JSON.parse(e.data);
+        if (d.ping) return;
+        if (d.status === 'complete') {
+          eventSource.close();
+          $dashStat.textContent = 'All agents complete';
+          return;
+        }
+        onAgentEvent(d);
+      };
+      eventSource.onerror = () => { eventSource.close(); };
+    }
+
+    function makeBlock(id, meta) {
+      const b = document.createElement('div');
+      b.className = 'agent-block';
+      b.id = id;
+      b.innerHTML =
+        '<div class="agent-row">' +
+          '<div class="agent-name-group">' +
+            '<span class="agent-icon">' + meta.icon + '</span>' + meta.name +
+          '</div>' +
+          '<span class="agent-badge running"><span class="spinner"></span> Running</span>' +
+        '</div>';
+      return b;
+    }
+
+    let councilStructureBuilt = false;
+
+    function ensureCouncilStructure() {
+      if (councilStructureBuilt) return;
+      councilStructureBuilt = true;
+      const inner = document.getElementById('councilAgents');
+      /* Pre-build: council block, triangle arrows, pair row, return arrows, bottom agents */
+      inner.innerHTML =
+        '<div id="council-top"></div>' +
+        '<div class="tri-arrows" id="triArrows" style="display:none;">' +
+          '<div class="flow-arrow active" id="arrow-space"><div class="arrow-line"></div><span class="arrow-head tri-head">\u25BC</span></div>' +
+          '<div class="flow-arrow active" id="arrow-skills"><div class="arrow-line"></div><span class="arrow-head tri-head">\u25BC</span></div>' +
+        '</div>' +
+        '<div class="agent-pair" id="agentPair"></div>';
+      /* Hide all triangle arrows until needed */
+      /* arrows are hidden via inline style, shown when agents spawn */
+    }
+
+    function onAgentEvent(ev) {
+      const meta = AGENT_META[ev.agent];
+      if (!meta) return;
+      const id = 'ab-' + ev.agent;
+
+      if (ev.status === 'running') {
+        ensureCouncilStructure();
+        const b = makeBlock(id, meta);
+        $dashStat.textContent = meta.name + ' running\u2026';
+
+        if (ev.agent === 'council') {
+          document.getElementById('council-top').appendChild(b);
+        } else if (ev.agent === 'space' || ev.agent === 'skills') {
+          document.getElementById('triArrows').style.display = 'flex';
+          document.getElementById('agentPair').appendChild(b);
+        }
+        $agents.scrollTop = $agents.scrollHeight;
+      }
+
+      if (ev.status === 'done') {
+        const b = document.getElementById(id);
+        if (!b) return;
+        b.classList.add('done');
+        const badge = b.querySelector('.agent-badge');
+        badge.className = 'agent-badge done';
+        badge.innerHTML = '\u2713 Done';
+
+        const out = document.createElement('div');
+        out.className = 'agent-output';
+        out.textContent = ev.output;
+        b.appendChild(out);
+        $agents.scrollTop = $agents.scrollHeight;
+
+        /* Flip arrows when agents report back */
+        if (ev.agent === 'space') {
+          const arrow = document.getElementById('arrow-space');
+          arrow.querySelector('.tri-head').classList.add('flipped');
+          arrow.classList.add('flipped-order');
+          arrow.className = 'flow-arrow done flipped-order';
+        } else if (ev.agent === 'skills') {
+          skillsOutput = ev.output || '';
+          const arrow = document.getElementById('arrow-skills');
+          arrow.querySelector('.tri-head').classList.add('flipped');
+          arrow.className = 'flow-arrow done flipped-order';
+          /* Ask Sarah before contacting community */
+          setTimeout(() => {
+            /* Show yes/no options directly */
+            const d = document.createElement('div');
+            d.className = 'message agent';
+            const prompt = document.createElement('span');
+            prompt.textContent = 'I found 4 people nearby. Contact their agents?';
+            d.appendChild(prompt);
+            const c = document.createElement('div');
+            c.className = 'options-container';
+
+            const yes = document.createElement('button');
+            yes.className = 'option-btn';
+            yes.innerHTML = '<span class="option-icon">\u2705</span><div><div class="option-label">Yes, reach out</div><div class="option-desc">Contact their agents now</div></div>';
+            yes.onclick = () => {
+              d.remove();
+              addMsg('user', 'Yes, reach out');
+              const reply = "On it. Contacting their agents now.";
+              addMsg('agent', reply);
+              speak(reply);
+              showCommunityResponses();
+            };
+
+            const no = document.createElement('button');
+            no.className = 'option-btn';
+            no.innerHTML = '<span class="option-icon">\u274C</span><div><div class="option-label">Not yet</div><div class="option-desc">Let me review first</div></div>';
+            no.onclick = () => {
+              d.remove();
+              addMsg('user', 'Not yet');
+              addMsg('agent', 'No problem. Let me know when you\u2019re ready.');
+            };
+
+            c.appendChild(yes);
+            c.appendChild(no);
+            d.appendChild(c);
+            $msgs.appendChild(d);
+            $msgs.scrollTop = $msgs.scrollHeight;
+          }, 1000);
+        }
+      }
+    }
+
+    /* ---- community responses ---- */
+    function showCommunityResponses() {
+      /* Mark council arrow as done, show community arrow as active */
+      const arrowCouncil = document.getElementById('arrowCouncil');
+      if (arrowCouncil) { arrowCouncil.className = 'flow-arrow done'; }
+
+      const arrowComm = document.getElementById('arrowCommunity');
+      arrowComm.style.display = 'flex';
+      arrowComm.className = 'flow-arrow active-up';
+
+      document.getElementById('communityBlock').classList.add('visible');
+      $dashStat.textContent = 'Contacting residents\u2026';
+      $agents.scrollTop = 0;
+
+      const $members = document.getElementById('communityMembers');
+      const people = [
+        { name: 'Dev',    emoji: '\u{1F331}', label: "Dev's Agent",    role: 'Planting Plan Lead', delay: 1500, status: 'accepted' },
+        { name: 'Amara',  emoji: '\u{1F91D}', label: "Amara's Agent",  role: 'Community Lead',     delay: 3000, status: 'accepted' },
+        { name: 'Riya',   emoji: '\u{1F3A8}', label: "Riya's Agent",   role: 'Design Lead',        delay: 4500, status: 'declined' },
+        { name: 'Kieran', emoji: '\u{1F44B}', label: "Kieran's Agent", role: 'Contributor',        delay: 6000, status: 'accepted' }
+      ];
+
+      let responded = 0;
+
+      people.forEach(p => {
+        const c = document.createElement('div');
+        c.className = 'member-card';
+        c.id = 'member-' + p.name;
+        c.innerHTML =
+          '<div class="m-name">' + p.emoji + ' ' + p.label + '</div>' +
+          '<div class="m-role">' + p.role + '</div>' +
+          '<div class="m-status pending">\u25CB Pending\u2026</div>';
+        $members.appendChild(c);
+
+        setTimeout(() => {
+          const card = document.getElementById('member-' + p.name);
+          const st = card.querySelector('.m-status');
+          if (p.status === 'accepted') {
+            st.className = 'm-status accepted';
+            st.textContent = '\u2713 Accepted';
+            card.style.borderColor = '#166534';
+          } else {
+            st.className = 'm-status declined';
+            st.textContent = '\u2717 Declined';
+            card.style.borderColor = '#7f1d1d';
+            card.style.opacity = '0.5';
+          }
+
+          responded++;
+          if (responded === people.length) {
+            $dashStat.textContent = '3 accepted \u00b7 1 declined';
+            arrowComm.className = 'flow-arrow done';
+            setTimeout(() => {
+              const msg = "Done. Dev, Amara, and Kieran are in. I\u2019ve started a group chat so you can all coordinate.";
+              addMsg('agent', msg);
+              speak(msg);
+              const preview = document.querySelector('#inboxAgent .inbox-preview');
+              if (preview) preview.textContent = msg.substring(0, 35) + '\u2026';
+              createGroupChat();
+            }, 1500);
+          }
+        }, p.delay);
+      });
+    }
+  </script>
+</body>
+</html>
